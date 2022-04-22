@@ -3,6 +3,17 @@
 
 #include <cmath>
 #include <iostream>
+#include <GL/freeglut.h>
+#include <vector>
+
+using namespace std;
+
+double xmin=0, ymin=0, xmax=0, ymax=0;
+
+struct ppt { double x, y; };
+
+vector<ppt> fpv = {};
+vector<ppt> spv = {};
 
 const int n = 10;
 const double a = 0;
@@ -348,9 +359,105 @@ void print_smooth_spl()
 	cout << "Max deviation equals " << max << endl;
 }
 
-int main()
+void cb_reshape(int ww, int wh)
 {
+	glViewport(0,0,ww,wh);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(xmin, xmax, ymin, ymax);
+	printf("Ortho block: %f - %f, %f - %f",xmin,xmax,ymin,ymax);
+}
+
+
+void cb_render()
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	if (spv.size() > 0)
+	{
+		glBegin(GL_LINE_STRIP);
+		
+		for (int i = 0; i < spv.size(); i++)
+		{
+			glColor3f(1, 1, 1);
+			glVertex2d(spv[i].x,spv[i].y);
+		}
+		glEnd();
+
+		
+
+		for (int i = 0; i < fpv.size(); i++)
+		{
+		glBegin(GL_LINE_LOOP);
+			glColor3f(1, 0, 0);
+			glVertex2d(fpv[i].x+0.01, fpv[i].y-0.01);
+			glVertex2d(fpv[i].x-0.01, fpv[i].y-0.01);
+			glVertex2d(fpv[i].x, fpv[i].y+0.01);
+		glEnd();
+		}
+		
+	}
+
+
+	glutSwapBuffers();
+
+}
+
+void calcvissplinedata()
+{
+	ymin = 0; ymax = 0;
+	double xl = 0;
+	double xh = 1;
+	xmin = xl; xmax = xh;
+	double d = (xh - xl) / 100;
+	double cx = xl;
+	int k=0;
+	fpv.clear();
+	spv.clear();
+	printf("\n\n -- Data for rendering -- \n");
+	while (cx <= xh)
+	{
+		if (k == 10)
+		{
+			fpv.push_back({ cx, f(cx) });
+			k = 0;
+		}
+		double ccy = cubic_spl(cx);
+		if (ccy < ymin) ymin = ccy;
+		if (ccy > ymax) ymax = ccy;
+		spv.push_back({ cx, ccy });
+		printf("x = %f; y = %f\n;",cx,ccy);
+		cx += d;
+		k++;
+	}
+}
+
+
+int main(int argc, char **argv)
+{
+
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
+	glutInitWindowPosition(100, 100);
+	glutInitWindowSize(800, 600);
+	glutCreateWindow("Chartmaker");
+
+	glutReshapeFunc(cb_reshape);
+	glutDisplayFunc(cb_render);
+
+	glClearColor(0, 0, 0, 1);
+
+
 	print_cubic_spl();
 	print_smooth_spl();
+
+	calcvissplinedata();
+
+	glutMainLoop();
+
 	return 0;
 }
