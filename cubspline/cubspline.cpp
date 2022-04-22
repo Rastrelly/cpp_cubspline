@@ -1,4 +1,7 @@
-﻿#include <cmath>
+﻿//код не авторский
+//todo: найти автора исходника
+
+#include <cmath>
 #include <iostream>
 
 const int n = 10;
